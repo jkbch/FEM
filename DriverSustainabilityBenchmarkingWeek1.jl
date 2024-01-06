@@ -26,7 +26,7 @@ u = []
 iter = 0
 
 # Call Group <X> solver
-fac = 100  # we do multiple runs to get the average time
+fac = 1000  # we do multiple runs to get the average time
 total_time = 0.0
 for i in 1:fac
     t = @elapsed begin
