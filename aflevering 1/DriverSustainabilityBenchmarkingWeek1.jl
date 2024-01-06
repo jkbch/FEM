@@ -17,6 +17,7 @@ c = funu(x[1])
 d = funu(x[end])
 tol = 1e-4
 maxit = 50
+DriverAMR17(L, c, d, x, func, tol, maxit)
 
 # Let's call the FEM BVP 1D Solver with AMR
 # time the code using @time
