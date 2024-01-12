@@ -27,7 +27,11 @@ function conelmtab(noelms1::Int64, noelms2::Int64)::Matrix{Int64}
     ]
 end
 
-function basfun(VX, VY, EToV)
+function basfun(
+    VX::Vector{Float64}, 
+    VY::Vector{Float64}, 
+    EToV::Matrix{Int64}
+)::Tuple{Matrix{Float64}, Matrix{Float64}, Matrix{Float64}}
     xjs = VX[EToV[:, [2,3,1]]]
     yjs = VY[EToV[:, [2,3,1]]]
 
@@ -248,25 +252,74 @@ function solveNDBVP(
     bnodes = constructBnodes(VX, VY, tol, fd_gamma2)
     A, b = dirbc(bnodes, f.(VX[bnodes], VY[bnodes]), A, b)
 
-    p = symamd(A)
-    ip = similar(p)
-    ip[p] = 1:length(p)
-
     A = Symmetric(A)
-
-    uhat = A[p,p] \ b[p]
-    uhat = uhat[ip]
+    uhat = A \ b
 
     return uhat
 end
 
-function Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
-    fd_gamma1(x, y) = min(x - x0, y - y0)
-    fd_gamma2(x, y) = min(x0 + L1 - x, y0 + L2 - y)
+function solveDBVP(
+    VX::Vector{Float64},
+    VY::Vector{Float64},
+    EToV::Matrix{Int64},
+    lam1::Float64,
+    lam2::Float64,
+    qt::Function,
+    f::Function,
+    fd_gamma::Function,
+    tol::Float64
+)::Vector{Float64}
+    A, b = assembly3(VX, VY, EToV, lam1, lam2, qt.(VX, VY))
+
+    bnodes = constructBnodes(VX, VY, tol, fd_gamma)
+    A, b = dirbc(bnodes, f.(VX[bnodes], VY[bnodes]), A, b)
+
+    A = Symmetric(A)
+    uhat = A \ b
+
+    return uhat
+end
+
+function Driver28b(
+    x0::Float64, 
+    y0::Float64, 
+    L1::Float64, 
+    L2::Float64, 
+    noelms1::Int64, 
+    noelms2::Int64, 
+    lam1::Float64, 
+    lam2::Float64, 
+    f::Function, 
+    qt::Function
+)::Tuple{Vector{Float64}, Vector{Float64}, Matrix{Int64}, Vector{Float64}}
+    fd_gamma(x, y) = min(x0 + L1 - x, y0 + L2 - y)
     tol = 0.0001
 
     VX, VY = xy(x0, y0, L1, L2, noelms1, noelms2)
     EToV = conelmtab(noelms1, noelms2)
-    uhat = solveNDBVP(VX, VY, EToV, lam1, lam2, qt, q, f, fd_gamma1, fd_gamma2, tol)
+    uhat = solveDBVP(VX, VY, EToV, lam1, lam2, qt, f, fd_gamma, tol)
+
+    return VX, VY, EToV, uhat
+end
+
+function Driver28c(
+    x0::Float64, 
+    y0::Float64, 
+    L1::Float64, 
+    L2::Float64, 
+    noelms1::Int64, 
+    noelms2::Int64, 
+    lam1::Float64, 
+    lam2::Float64, 
+    f::Function, 
+    qt::Function
+)::Tuple{Vector{Float64}, Vector{Float64}, Matrix{Int64}, Vector{Float64}}
+    fd_gamma(x, y) = min(x - x0, y - y0, x0 + L1 - x, y0 + L2 - y)
+    tol = 0.0001
+
+    VX, VY = xy(x0, y0, L1, L2, noelms1, noelms2)
+    EToV = conelmtab(noelms1, noelms2)
+    uhat = solveDBVP(VX, VY, EToV, lam1, lam2, qt, f, fd_gamma, tol)
+    
     return VX, VY, EToV, uhat
 end

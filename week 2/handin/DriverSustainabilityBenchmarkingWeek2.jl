@@ -18,7 +18,7 @@ using SymRCM
 using AMD
 using Plots
 
-include("Driver28b.jl")
+include("Driver28.jl")
 
 # TODO PUT IN YOUR GRROUP NO AND STUDENT IDs FOR THE GROUP HERE
 groupNo = 18  # Put your group no here.
@@ -27,7 +27,7 @@ groupStudentIDs = "s214722, s214695, s204354"  # Put your student id's here.
 # PATHS
 cd(@__DIR__)  # change to directory
 dirThisScript = pwd()  # store path
-dirStoreResults = "C:\\Users\\clar1\\OneDrive\\Dokumenter\\DTU\\5. semester\\FEM\\code\\week 2\\handin\\plots" #"/Users/apek/02623/Handinresults/"
+dirStoreResults = "/home/jakob/Uni/Fem/code/week 2/handin/plots/" #"/Users/apek/02623/Handinresults/"
 
 # PARAMETERS FOR SUUSTAINABILITY CALCULATION
 CO2intensity = 0.285  # [kg CO2/kWh], https://communitiesforfuture.org/collaborate/electricity-map/
@@ -46,32 +46,19 @@ lam2 = 1.0
 f(x, y) = cos(π * x) * cos(π * y)
 qt(x, y) = 2 * π^2 * cos(π * x) * cos(π * y)
 
-ux(x, y) = -pi*sin(pi*x)*cos(pi*y)
-uy(x, y) = -cos(pi*x)*pi*sin(pi*y)
-function q(x1, y1, x2, y2)
-    dx = x2 - x1
-    dy = y2 - y1
-    norm = sqrt(dx^2 + dy^2)
-    n1 = dy / norm
-    n2 = -dx / norm
-
-    xc = (x1 + x2) / 2
-    yc = (y1 + y2) / 2
-
-    return - lam1 * ux(xc, yc) * n1 - lam2 * uy(xc, yc) * n2
-end
-Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
-
 # EXECUTE CODE
 # Let's call the FEM BVP 2D Solver you produced
 # time the code using @time
 
+VX, VY, EToV, U = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
+VX2, VY2, EToV2, U2 = Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
+
 # Call Group 30 solver
-fac = 1000
+fac = 100
 total_time = 0.0
 for i in 1:fac
     t = @elapsed begin
-        global VX, VY, EToV, U = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
+        Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
     end
     global total_time += t
 end
@@ -86,7 +73,7 @@ L2 = 2.0
 total_time = 0.0
 for i in 1:fac
     t = @elapsed begin
-        global VX2, VY2, EToV2, U2 = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q) #Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
+        Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
     end
     global total_time += t
 end
