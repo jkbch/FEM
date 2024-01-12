@@ -1,10 +1,3 @@
-using LinearAlgebra
-using SparseArrays
-using Plots
-using Polynomials
-using SymRCM
-using AMD
-
 function xy(
     x0::Float64, 
     y0::Float64, 
