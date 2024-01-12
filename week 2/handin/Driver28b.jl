@@ -239,7 +239,7 @@ function solveNDBVP(
     fd_gamma2::Function,
     tol::Float64
 )::Vector{Float64}
-    A, b = assembly(VX, VY, EToV, lam1, lam2, qt.(VX, VY))
+    A, b = assembly3(VX, VY, EToV, lam1, lam2, qt.(VX, VY))
 
     beds = constructBeds(VX, VY, EToV, tol, fd_gamma1)
     i, j = edgeIndices(EToV, beds)
@@ -248,15 +248,14 @@ function solveNDBVP(
     bnodes = constructBnodes(VX, VY, tol, fd_gamma2)
     A, b = dirbc(bnodes, f.(VX[bnodes], VY[bnodes]), A, b)
 
-    #p = symamd(A)
-    #ip = similar(p)
-    #ip[p] = 1:length(p)
+    p = symamd(A)
+    ip = similar(p)
+    ip[p] = 1:length(p)
 
     A = Symmetric(A)
-    uhat = A \ b
 
-    #uhat = A[p,p] \ b[p]
-    #uhat = uhat[ip]
+    uhat = A[p,p] \ b[p]
+    uhat = uhat[ip]
 
     return uhat
 end

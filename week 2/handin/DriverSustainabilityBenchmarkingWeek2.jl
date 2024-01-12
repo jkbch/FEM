@@ -27,7 +27,7 @@ groupStudentIDs = "s214722, s214695, s204354"  # Put your student id's here.
 # PATHS
 cd(@__DIR__)  # change to directory
 dirThisScript = pwd()  # store path
-dirStoreResults = "/home/jakob/Uni/Fem/code/week 2/handin/plots/" #"/Users/apek/02623/Handinresults/"
+dirStoreResults = "C:\\Users\\clar1\\OneDrive\\Dokumenter\\DTU\\5. semester\\FEM\\code\\week 2\\handin\\plots" #"/Users/apek/02623/Handinresults/"
 
 # PARAMETERS FOR SUUSTAINABILITY CALCULATION
 CO2intensity = 0.285  # [kg CO2/kWh], https://communitiesforfuture.org/collaborate/electricity-map/
@@ -66,27 +66,31 @@ Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
 # Let's call the FEM BVP 2D Solver you produced
 # time the code using @time
 
-N = 100
-
 # Call Group 30 solver
-CPUtime1 = @elapsed begin
-    for _ in 1:N
+fac = 1000
+total_time = 0.0
+for i in 1:fac
+    t = @elapsed begin
         global VX, VY, EToV, U = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
     end
+    global total_time += t
 end
-CPUtime1 \= N
+CPUtime1 = total_time / fac
 DOF1 = length(U)
 
 x0 = -1.0
 y0 = -1.0
 L1 = 2.0
 L2 = 2.0
-CPUtime2 = @elapsed begin
-    for _ in 1:N
+
+total_time = 0.0
+for i in 1:fac
+    t = @elapsed begin
         global VX2, VY2, EToV2, U2 = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q) #Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
     end
+    global total_time += t
 end
-CPUtime1 \= N
+CPUtime2 = total_time / fac
 DOF2 = length(U2)
 
 CO2eq1 = CPUtime1 / 3600 * PowerEstimate / 1000 * CO2intensity
