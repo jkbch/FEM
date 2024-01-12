@@ -1,3 +1,10 @@
+using LinearAlgebra
+using SparseArrays
+using Plots
+using Polynomials
+using SymRCM
+using AMD
+
 function xy(
     x0::Float64, 
     y0::Float64, 
@@ -120,19 +127,89 @@ function assembly(
 )::Tuple{SparseMatrixCSC{Float64, Int64}, Vector{Float64}}
     N = size(EToV)[1]
     M = length(VX)
+    A = spzeros(M, M)
+    b = zeros(M)
+
+    as, bs, cs = basfun(VX, VY, EToV)
+    deltas = sum(as, dims=2) ./ 2
+    qs = abs.(deltas) .* sum(qt[EToV], dims=2) / 9
+
+    r = [1,1,1,2,2,3]
+    s = [1,2,3,2,3,3]
+    i = EToV[:,r]
+    j = EToV[:,s]
+    ks = (lam1 .* bs[:,r] .* bs[:,s] .+ lam2 .* cs[:,r] .* cs[:,s]) ./ (4 .* abs.(deltas))
+    idx = CartesianIndex.(min.(i, j), max.(i, j))
+
+    for n in 1:N
+        A[idx[n, :]] += ks[n, :]
+        b[EToV[n, :]] .+= qs[n]
+    end
+
+    return A, b
+end
+
+function assembly2(
+    VX::Vector{Float64},
+    VY::Vector{Float64},
+    EToV::Matrix{Int64},
+    lam1::Float64,
+    lam2::Float64,
+    qt::Vector{Float64}
+)::Tuple{SparseMatrixCSC{Float64, Int64}, Vector{Float64}}
+    N = size(EToV)[1]
+    M = length(VX)
+    A = spzeros(M, M)
+    b = zeros(M)
+
+    as, bs, cs = basfun(VX, VY, EToV)
+    deltas = sum(as, dims=2) ./ 2
+    qs = abs.(deltas) .* sum(qt[EToV], dims=2) / 9
+
+    for r in 1:3
+        i = EToV[:,r]
+
+        for n in 1:N
+            b[i[n]] += qs[n]
+        end
+
+        for s in r:3
+            j = EToV[:,s]
+            ks = (lam1 .* bs[:,r] .* bs[:,s] + lam2 .* cs[:,r] .* cs[:,s]) ./ (4 .* abs.(deltas))
+            idx = CartesianIndex.(min.(i, j), max.(i, j))
+
+            for n in 1:N
+                A[idx[n]] += ks[n]
+            end
+        end
+    end
+
+    return A, b
+end
+
+function assembly3(
+    VX::Vector{Float64},
+    VY::Vector{Float64},
+    EToV::Matrix{Int64},
+    lam1::Float64,
+    lam2::Float64,
+    qt::Vector{Float64}
+)::Tuple{SparseMatrixCSC{Float64, Int64}, Vector{Float64}}
+    N = size(EToV)[1]
+    M = length(VX)
 
     A = spzeros(M, M)
     B = zeros(M)
 
     as, bs, cs = basfun(VX, VY, EToV)
-    deltas = sum(as, dims=1) ./ 2
-    qs = abs.(deltas) .* sum(qt[EToV], dims=1) / 9
+    deltas = sum(as, dims=2) ./ 2
+    qs = abs.(deltas) .* sum(qt[EToV], dims=2) / 9
 
     for n in 1:N
         delta = deltas[n]
-        b = bs[n]
-        c = cs[n]
         q = qs[n]
+        b = bs[n, :]
+        c = cs[n, :]
 
         for r in 1:3
             i = EToV[n,r]
@@ -141,11 +218,7 @@ function assembly(
             for s in r:3
                 j = EToV[n,s]
                 kn = (lam1*b[r]*b[s] + lam2*c[r]*c[s]) / (4 * abs(delta))
-                if j >= i
-                    A[i,j] += kn
-                else
-                    A[j,i] += kn
-                end
+                A[min(i, j), max(i, j)] += kn
             end
         end
     end
@@ -175,15 +248,17 @@ function solveNDBVP(
     bnodes = constructBnodes(VX, VY, tol, fd_gamma2)
     A, b = dirbc(bnodes, f.(VX[bnodes], VY[bnodes]), A, b)
 
-    p = symamd(A)
-    ip = similar(p)
-    ip[p] = 1:length(p)
+    #p = symamd(A)
+    #ip = similar(p)
+    #ip[p] = 1:length(p)
 
     A = Symmetric(A)
+    uhat = A \ b
 
-    uhat = A[p,p] \ b[p]
+    #uhat = A[p,p] \ b[p]
+    #uhat = uhat[ip]
 
-    return uhat[ip]
+    return uhat
 end
 
 function Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
