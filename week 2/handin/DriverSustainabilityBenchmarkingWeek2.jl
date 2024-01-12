@@ -14,8 +14,6 @@
 using Printf
 using LinearAlgebra
 using SparseArrays
-using SymRCM
-using AMD
 using Plots
 
 include("Driver28.jl")
