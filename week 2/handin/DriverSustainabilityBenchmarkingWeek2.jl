@@ -51,7 +51,6 @@ qt(x, y) = 2 * π^2 * cos(π * x) * cos(π * y)
 # time the code using @time
 
 VX, VY, EToV, U = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
-VX2, VY2, EToV2, U2 = Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
 
 # Call Group 30 solver
 fac = 100
@@ -69,6 +68,8 @@ x0 = -1.0
 y0 = -1.0
 L1 = 2.0
 L2 = 2.0
+
+VX2, VY2, EToV2, U2 = Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
 
 total_time = 0.0
 for i in 1:fac

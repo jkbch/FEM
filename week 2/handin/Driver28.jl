@@ -120,7 +120,6 @@ function neubc(
     return b
 end
 
-
 function assembly(
     VX::Vector{Float64},
     VY::Vector{Float64},
@@ -131,26 +130,33 @@ function assembly(
 )::Tuple{SparseMatrixCSC{Float64, Int64}, Vector{Float64}}
     N = size(EToV)[1]
     M = length(VX)
+
     A = spzeros(M, M)
-    b = zeros(M)
+    B = zeros(M)
 
     as, bs, cs = basfun(VX, VY, EToV)
     deltas = sum(as, dims=2) ./ 2
     qs = abs.(deltas) .* sum(qt[EToV], dims=2) / 9
 
-    r = [1,1,1,2,2,3]
-    s = [1,2,3,2,3,3]
-    i = EToV[:,r]
-    j = EToV[:,s]
-    ks = (lam1 .* bs[:,r] .* bs[:,s] .+ lam2 .* cs[:,r] .* cs[:,s]) ./ (4 .* abs.(deltas))
-    idx = CartesianIndex.(min.(i, j), max.(i, j))
-
     for n in 1:N
-        A[idx[n, :]] += ks[n, :]
-        b[EToV[n, :]] .+= qs[n]
+        delta = deltas[n]
+        q = qs[n]
+        b = bs[n, :]
+        c = cs[n, :]
+
+        for r in 1:3
+            i = EToV[n,r]
+            B[i] += q
+
+            for s in r:3
+                j = EToV[n,s]
+                kn = (lam1*b[r]*b[s] + lam2*c[r]*c[s]) / (4 * abs(delta))
+                A[min(i, j), max(i, j)] += kn
+            end
+        end
     end
 
-    return A, b
+    return A, B
 end
 
 function assembly2(
@@ -201,33 +207,26 @@ function assembly3(
 )::Tuple{SparseMatrixCSC{Float64, Int64}, Vector{Float64}}
     N = size(EToV)[1]
     M = length(VX)
-
     A = spzeros(M, M)
-    B = zeros(M)
+    b = zeros(M)
 
     as, bs, cs = basfun(VX, VY, EToV)
     deltas = sum(as, dims=2) ./ 2
     qs = abs.(deltas) .* sum(qt[EToV], dims=2) / 9
 
+    r = [1,1,1,2,2,3]
+    s = [1,2,3,2,3,3]
+    i = EToV[:,r]
+    j = EToV[:,s]
+    ks = (lam1 .* bs[:,r] .* bs[:,s] .+ lam2 .* cs[:,r] .* cs[:,s]) ./ (4 .* abs.(deltas))
+    idx = CartesianIndex.(min.(i, j), max.(i, j))
+
     for n in 1:N
-        delta = deltas[n]
-        q = qs[n]
-        b = bs[n, :]
-        c = cs[n, :]
-
-        for r in 1:3
-            i = EToV[n,r]
-            B[i] += q
-
-            for s in r:3
-                j = EToV[n,s]
-                kn = (lam1*b[r]*b[s] + lam2*c[r]*c[s]) / (4 * abs(delta))
-                A[min(i, j), max(i, j)] += kn
-            end
-        end
+        A[idx[n, :]] += ks[n, :]
+        b[EToV[n, :]] .+= qs[n]
     end
 
-    return A, B
+    return A, b
 end
 
 function solveNDBVP(
@@ -243,7 +242,7 @@ function solveNDBVP(
     fd_gamma2::Function,
     tol::Float64
 )::Vector{Float64}
-    A, b = assembly3(VX, VY, EToV, lam1, lam2, qt.(VX, VY))
+    A, b = assembly(VX, VY, EToV, lam1, lam2, qt.(VX, VY))
 
     beds = constructBeds(VX, VY, EToV, tol, fd_gamma1)
     i, j = edgeIndices(EToV, beds)
@@ -269,7 +268,7 @@ function solveDBVP(
     fd_gamma::Function,
     tol::Float64
 )::Vector{Float64}
-    A, b = assembly3(VX, VY, EToV, lam1, lam2, qt.(VX, VY))
+    A, b = assembly(VX, VY, EToV, lam1, lam2, qt.(VX, VY))
 
     bnodes = constructBnodes(VX, VY, tol, fd_gamma)
     A, b = dirbc(bnodes, f.(VX[bnodes], VY[bnodes]), A, b)
