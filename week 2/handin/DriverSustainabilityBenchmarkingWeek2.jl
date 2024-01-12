@@ -66,20 +66,28 @@ Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
 # Let's call the FEM BVP 2D Solver you produced
 # time the code using @time
 
+N = 100
+
 # Call Group 30 solver
 CPUtime1 = @elapsed begin
-    VX, VY, EToV, U = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
+    for _ in 1:N
+        global VX, VY, EToV, U = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
+    end
 end
-DOF1 = length(U[:])
+CPUtime1 \= N
+DOF1 = length(U)
 
 x0 = -1.0
 y0 = -1.0
 L1 = 2.0
 L2 = 2.0
 CPUtime2 = @elapsed begin
-    VX2, VY2, EToV2, U2 = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q) #Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
+    for _ in 1:N
+        global VX2, VY2, EToV2, U2 = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q) #Driver28c(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt, q)
+    end
 end
-DOF2 = length(U2[:])
+CPUtime1 \= N
+DOF2 = length(U2)
 
 CO2eq1 = CPUtime1 / 3600 * PowerEstimate / 1000 * CO2intensity
 CO2eq2 = CPUtime2 / 3600 * PowerEstimate / 1000 * CO2intensity
