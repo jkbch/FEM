@@ -25,7 +25,7 @@ groupStudentIDs = "s214722, s214695, s204354"  # Put your student id's here.
 # PATHS
 cd(@__DIR__)  # change to directory
 dirThisScript = pwd()  # store path
-dirStoreResults = "/home/jakob/Uni/Fem/code/week 2/handin/plots/" #"/Users/apek/02623/Handinresults/"
+dirStoreResults = "/Users/apek/02623/Handinresults/"
 
 # PARAMETERS FOR SUUSTAINABILITY CALCULATION
 CO2intensity = 0.285  # [kg CO2/kWh], https://communitiesforfuture.org/collaborate/electricity-map/
@@ -48,10 +48,10 @@ qt(x, y) = 2 * π^2 * cos(π * x) * cos(π * y)
 # Let's call the FEM BVP 2D Solver you produced
 # time the code using @time
 
+# Exercise b)
 VX, VY, EToV, U = Driver28b(x0, y0, L1, L2, noelms1, noelms2, lam1, lam2, f, qt)
 
-# Call Group 30 solver
-fac = 100
+fac = 10
 total_time = 0.0
 for i in 1:fac
     t = @elapsed begin
@@ -62,6 +62,7 @@ end
 CPUtime1 = total_time / fac
 DOF1 = length(U)
 
+# Exercise c)
 x0 = -1.0
 y0 = -1.0
 L1 = 2.0
@@ -79,6 +80,7 @@ end
 CPUtime2 = total_time / fac
 DOF2 = length(U2)
 
+# Plots
 CO2eq1 = CPUtime1 / 3600 * PowerEstimate / 1000 * CO2intensity
 CO2eq2 = CPUtime2 / 3600 * PowerEstimate / 1000 * CO2intensity
 
